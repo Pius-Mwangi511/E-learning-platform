@@ -1,6 +1,6 @@
 export class createuserDto {
     fullName:string;
-    passsword:string;
     email:string;
+    password:string;
     role: 'STUDENT' |'INSTRUCTOR'| 'ADMIN';
 }
