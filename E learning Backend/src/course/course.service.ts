@@ -8,8 +8,19 @@ export class CourseService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCourseDto) {
-    return this.prisma.course.create({ data: dto });
+    const instructor = await this.prisma.user.findUnique({
+      where: { id: dto.instructorId },
+    });
+  
+    if (!instructor) {
+      throw new Error(`Instructor with ID ${dto.instructorId} not found`);
+    }
+  
+    return this.prisma.course.create({
+      data: dto,
+    });
   }
+  
 
   async findAll() {
     return this.prisma.course.findMany({
