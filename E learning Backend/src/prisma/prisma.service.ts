@@ -4,7 +4,7 @@ import {
     OnModuleDestroy,
     Logger,
 } from '@nestjs/common';
-import {PrismaClient, Role} from "@prisma/client";
+import {PrismaClient} from "@prisma/client";
 
 
 @Injectable()
@@ -14,7 +14,7 @@ export class PrismaService
 {
     private readonly logger = new Logger(PrismaService.name);
     private static isConnected = false;
-    role: Role;
+    //role: Role;
     constructor() {
         super({
             log: ['error', 'warn'],

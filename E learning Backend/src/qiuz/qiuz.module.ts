@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { QiuzService } from './qiuz.service';
-import { QiuzController } from './qiuz.controller';
+import { QuizService } from './qiuz.service'; 
+import { QuizController } from './qiuz.controller'; 
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Module({
-  controllers: [QiuzController],
-  providers: [QiuzService],
+  controllers: [QuizController],
+  providers: [QuizService, PrismaService],
 })
-export class QiuzModule {}
+export class QuizModule {}
+
