@@ -7,6 +7,5 @@ export class UserResponseDto {
     role: Role;
     createdAt: Date;
     updatedAt: Date;
-    Status: Status;
     profileImage: string | null;
 }
