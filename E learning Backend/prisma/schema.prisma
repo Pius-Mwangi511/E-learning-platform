@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -15,21 +9,22 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  fullName     String
-  email        String        @unique
-  password     String
-  role         Role          @default(STUDENT)
-  isVerified   Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id         String        @id @default(uuid())
+  fullName   String
+  email      String        @unique
+  password   String
+  role       Role          @default(STUDENT)
+  isVerified Boolean       @default(false)
+  status     AccountStatus @default(ACTIVE)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
   enrollments  Enrollment[]
   courses      Course[]      @relation("InstructorCourses")
   progress     Progress[]
   reviews      Review[]
   quizAttempts QuizAttempt[]
-
-  Certificate Certificate[]
+  Certificate  Certificate[]
 }
 
 enum Role {
@@ -38,16 +33,10 @@ enum Role {
   STUDENT
 }
 
-model Certificate {
-  id             String   @id @default(uuid())
-  userId         String
-  courseId       String
-  issuedAt       DateTime @default(now())
-  certificateUrl String? // Optional if you're storing a PDF/image
-  user           User     @relation(fields: [userId], references: [id])
-  course         Course   @relation(fields: [courseId], references: [id])
-
-  @@unique([userId, courseId]) // Prevent duplicate certificates
+enum AccountStatus {
+  ACTIVE
+  PENDING
+  BANNED
 }
 
 model Course {
@@ -56,16 +45,23 @@ model Course {
   description  String
   level        Difficulty
   category     String
+  status       CourseStatus @default(DRAFT)
   instructorId String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  instructor   User         @relation("InstructorCourses", fields: [instructorId], references: [id])
-  modules      Module[]
-  enrollments  Enrollment[]
-  reviews      Review[]
-  Quiz         Quiz[]
 
+  instructor  User          @relation("InstructorCourses", fields: [instructorId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  Quiz        Quiz[]
   Certificate Certificate[]
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum Difficulty {
@@ -83,31 +79,73 @@ model Module {
 }
 
 model Lesson {
-  id       String     @id @default(uuid())
-  title    String
-  content  String // Can be text, video URL, or file path
-  moduleId String
-  module   Module     @relation(fields: [moduleId], references: [id])
-  order    Int
-  Progress Progress[]
+  id         String        @id @default(uuid())
+  title      String
+  content    String // Can be text, video URL, or file path
+  moduleId   String
+  module     Module        @relation(fields: [moduleId], references: [id])
+  order      Int
+  visibility ContentStatus @default(VISIBLE)
+  Progress   Progress[]
+}
+
+enum ContentStatus {
+  VISIBLE
+  HIDDEN
+  DELETED
 }
 
 model Enrollment {
-  id         String   @id @default(uuid())
+  id         String           @id @default(uuid())
   userId     String
   courseId   String
-  enrolledAt DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
-  course     Course   @relation(fields: [courseId], references: [id])
+  enrolledAt DateTime         @default(now())
+  status     EnrollmentStatus @default(ENROLLED)
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  COMPLETED
+  CANCELLED
 }
 
 model Progress {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   userId      String
   lessonId    String
-  completedAt DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
-  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  completedAt DateTime       @default(now())
+  status      ProgressStatus @default(COMPLETED)
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Certificate {
+  id             String            @id @default(uuid())
+  userId         String
+  courseId       String
+  issuedAt       DateTime          @default(now())
+  certificateUrl String?
+  status         CertificateStatus @default(GENERATED)
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+enum CertificateStatus {
+  GENERATED
+  REVOKED
 }
 
 model Quiz {
@@ -126,7 +164,7 @@ model Question {
   quizId  String
   quiz    Quiz         @relation(fields: [quizId], references: [id])
   options Option[]
-  answer  String // For MCQ
+  answer  String
 }
 
 enum QuestionType {
@@ -142,22 +180,38 @@ model Option {
 }
 
 model QuizAttempt {
-  id          String   @id @default(uuid())
+  id          String        @id @default(uuid())
   userId      String
   quizId      String
   score       Float
-  attemptedAt DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
-  quiz        Quiz     @relation(fields: [quizId], references: [id])
+  attemptedAt DateTime      @default(now())
+  status      AttemptStatus @default(SUBMITTED)
+
+  user User @relation(fields: [userId], references: [id])
+  quiz Quiz @relation(fields: [quizId], references: [id])
+}
+
+enum AttemptStatus {
+  PENDING
+  SUBMITTED
+  GRADED
 }
 
 model Review {
-  id        String   @id @default(uuid())
+  id        String       @id @default(uuid())
   rating    Int
   comment   String
   userId    String
   courseId  String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime     @default(now())
+  status    ReviewStatus @default(PENDING)
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
